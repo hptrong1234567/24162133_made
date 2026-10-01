@@ -16,7 +16,6 @@ import vn.iotstar.model.User_24162133;
 import vn.iotstar.service.BookService_24162133;
 import vn.iotstar.service.CartService_24162133;
 import vn.iotstar.service.OrderService_24162133;
-import vn.iotstar.service.impl.BookServiceImpl_24162133;
 
 public class OrderServiceImpl_24162133 implements OrderService_24162133 {
 
@@ -31,19 +30,16 @@ public class OrderServiceImpl_24162133 implements OrderService_24162133 {
     @Override
     public Order_24162133 checkoutCOD(Integer userId, String shippingAddress, String phone, String note) {
 
-        // ===== 1. Kiểm tra user =====
         User_24162133 user = userDAO.findById(userId);
         if (user == null) {
             throw new RuntimeException("User không tồn tại");
         }
 
-        // ===== 2. Lấy giỏ hàng =====
         List<CartItem_24162133> cartItems = cartService.getCart(userId);
         if (cartItems == null || cartItems.isEmpty()) {
             throw new RuntimeException("Giỏ hàng trống, không thể đặt hàng");
         }
 
-        // ===== 3. Validate thông tin giao hàng =====
         if (shippingAddress == null || shippingAddress.trim().isEmpty()) {
             throw new RuntimeException("Địa chỉ giao hàng không được để trống");
         }
@@ -51,19 +47,17 @@ public class OrderServiceImpl_24162133 implements OrderService_24162133 {
             throw new RuntimeException("Số điện thoại không được để trống");
         }
 
-        // ===== 4. Tạo đơn hàng =====
         Order_24162133 order = new Order_24162133();
         order.setUser(user);
         order.setOrderDate(LocalDateTime.now());
         order.setPaymentMethod("COD");
-        order.setStatus("PENDING");           // Chờ xác nhận
+        order.setStatus("PENDING");
         order.setShippingAddress(shippingAddress.trim());
         order.setPhone(phone.trim());
         order.setNote(note);
 
         BigDecimal totalAmount = BigDecimal.ZERO;
 
-        // ===== 5. Tạo OrderItem từ CartItem + trừ tồn kho =====
         for (CartItem_24162133 cartItem : cartItems) {
             Book_24162133 book = cartItem.getBook();
             if (book == null) continue;
@@ -71,35 +65,27 @@ public class OrderServiceImpl_24162133 implements OrderService_24162133 {
             int qty = cartItem.getQuantity();
             int stock = (book.getQuantity() == null) ? 0 : book.getQuantity();
 
-            // Kiểm tra tồn kho
             if (stock < qty) {
                 throw new RuntimeException("Sách '" + book.getTitle()
                         + "' chỉ còn " + stock + " cuốn, không đủ số lượng đặt");
             }
 
-            // Tạo OrderItem
             BigDecimal price = (book.getPrice() == null) ? BigDecimal.ZERO : book.getPrice();
             OrderItem_24162133 orderItem = new OrderItem_24162133(book, qty, price);
             order.addItem(orderItem);
 
-            // Cộng dồn tổng tiền
             totalAmount = totalAmount.add(price.multiply(BigDecimal.valueOf(qty)));
 
-            // Trừ tồn kho
             book.setQuantity(stock - qty);
             bookService.update(book);
         }
 
         order.setTotalAmount(totalAmount);
 
-        // ===== 6. Lưu đơn hàng (cascade lưu luôn OrderItem) =====
         Order_24162133 savedOrder = orderDAO.insert(order);
-
-        // ===== 7. Xóa giỏ hàng sau khi đặt thành công =====
         cartService.clearCart(userId);
 
-        System.out.println(">>> Đặt hàng COD thành công. Order ID = " + savedOrder.getOrderId()
-                + " | Total = " + totalAmount);
+        System.out.println(">>> Đặt hàng COD thành công. Order ID = " + savedOrder.getOrderId());
 
         return savedOrder;
     }
@@ -110,6 +96,17 @@ public class OrderServiceImpl_24162133 implements OrderService_24162133 {
     @Override
     public List<Order_24162133> getOrdersByUser(Integer userId) {
         return orderDAO.findByUserId(userId);
+    }
+
+    // ============================================================
+    // LỌC ĐƠN HÀNG THEO TRẠNG THÁI
+    // ============================================================
+    @Override
+    public List<Order_24162133> getOrdersByUserAndStatus(Integer userId, String status) {
+        if (status == null || status.trim().isEmpty() || "ALL".equals(status)) {
+            return orderDAO.findByUserId(userId);
+        }
+        return orderDAO.findByUserIdAndStatus(userId, status);
     }
 
     // ============================================================
@@ -138,8 +135,10 @@ public class OrderServiceImpl_24162133 implements OrderService_24162133 {
             throw new RuntimeException("Đơn hàng không tồn tại");
         }
 
-        // Validate trạng thái hợp lệ
-        String[] validStatuses = {"PENDING", "CONFIRMED", "SHIPPING", "DELIVERED", "CANCELLED"};
+        String[] validStatuses = {
+                "PENDING", "CONFIRMED", "PREPARING", "SHIPPING",
+                "DELIVERING", "DELIVERED", "CANCELLED", "RETURNED"
+        };
         boolean valid = false;
         for (String s : validStatuses) {
             if (s.equals(newStatus)) {

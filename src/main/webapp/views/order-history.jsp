@@ -8,6 +8,38 @@
     <title>Đơn hàng của tôi - BookStore</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css">
     <style>
+        /* ===== FILTER BUTTONS ===== */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 20px 0;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            color: #374151;
+            background: #f3f4f6;
+        }
+        .filter-btn:hover {
+            background: #e5e7eb;
+        }
+        .filter-btn.active {
+            background: #172554;
+            color: white;
+            border-color: #172554;
+        }
+
+        /* ===== ORDER CARD ===== */
         .order-card {
             background: white;
             border-radius: 10px;
@@ -34,15 +66,18 @@
             font-size: 13px;
             font-weight: bold;
         }
-        .status-PENDING { background: #fef3c7; color: #92400e; }
-        .status-CONFIRMED { background: #dbeafe; color: #1e40af; }
-        .status-SHIPPING { background: #e0e7ff; color: #4338ca; }
-        .status-DELIVERED { background: #dcfce7; color: #166534; }
-        .status-CANCELLED { background: #fee2e2; color: #991b1b; }
 
-        .order-items-list {
-            list-style: none;
-        }
+        /* ===== 8 TRẠNG THÁI ===== */
+        .status-PENDING    { background: #fef3c7; color: #92400e; }
+        .status-CONFIRMED  { background: #dbeafe; color: #1e40af; }
+        .status-PREPARING  { background: #ede9fe; color: #5b21b6; }
+        .status-SHIPPING   { background: #e0e7ff; color: #4338ca; }
+        .status-DELIVERING { background: #ccfbf1; color: #115e59; }
+        .status-DELIVERED  { background: #dcfce7; color: #166534; }
+        .status-CANCELLED  { background: #fee2e2; color: #991b1b; }
+        .status-RETURNED   { background: #ffedd5; color: #9a3412; }
+
+        .order-items-list { list-style: none; }
         .order-items-list li {
             padding: 8px 0;
             border-bottom: 1px solid #f1f5f9;
@@ -57,15 +92,8 @@
             margin-top: 15px;
             border-top: 2px solid #f1f5f9;
         }
-        .order-total {
-            font-size: 20px;
-            color: #dc2626;
-            font-weight: bold;
-        }
-        .order-info {
-            color: #666;
-            font-size: 14px;
-        }
+        .order-total { font-size: 20px; color: #dc2626; font-weight: bold; }
+        .order-info { color: #666; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -97,11 +125,56 @@
             </div>
         </c:if>
 
+        <!-- ===== FILTER BAR ===== -->
+        <div class="filter-bar">
+            <a href="${pageContext.request.contextPath}/order-history?status=ALL"
+               class="filter-btn ${currentStatus == 'ALL' ? 'active' : ''}">
+                📋 Tất cả
+            </a>
+            <a href="${pageContext.request.contextPath}/order-history?status=PENDING"
+               class="filter-btn ${currentStatus == 'PENDING' ? 'active' : ''}">
+                🆕 Đơn hàng mới
+            </a>
+            <a href="${pageContext.request.contextPath}/order-history?status=CONFIRMED"
+               class="filter-btn ${currentStatus == 'CONFIRMED' ? 'active' : ''}">
+                ✅ Đã xác nhận
+            </a>
+            <a href="${pageContext.request.contextPath}/order-history?status=PREPARING"
+               class="filter-btn ${currentStatus == 'PREPARING' ? 'active' : ''}">
+                📦 Chuẩn bị hàng
+            </a>
+            <a href="${pageContext.request.contextPath}/order-history?status=SHIPPING"
+               class="filter-btn ${currentStatus == 'SHIPPING' ? 'active' : ''}">
+                🚚 Đang vận chuyển
+            </a>
+            <a href="${pageContext.request.contextPath}/order-history?status=DELIVERING"
+               class="filter-btn ${currentStatus == 'DELIVERING' ? 'active' : ''}">
+                🛵 Đang giao hàng
+            </a>
+            <a href="${pageContext.request.contextPath}/order-history?status=DELIVERED"
+               class="filter-btn ${currentStatus == 'DELIVERED' ? 'active' : ''}">
+                📬 Đã giao hàng
+            </a>
+            <a href="${pageContext.request.contextPath}/order-history?status=CANCELLED"
+               class="filter-btn ${currentStatus == 'CANCELLED' ? 'active' : ''}">
+                ❌ Đơn hàng hủy
+            </a>
+            <a href="${pageContext.request.contextPath}/order-history?status=RETURNED"
+               class="filter-btn ${currentStatus == 'RETURNED' ? 'active' : ''}">
+                ↩️ Đơn hàng hoàn
+            </a>
+        </div>
+
         <!-- Chưa có đơn -->
         <c:if test="${empty orders}">
             <div style="text-align:center; padding:60px 20px; background:white; border-radius:10px;">
-                <h2 style="color:#666;">📦 Chưa có đơn hàng nào</h2>
-                <p style="color:#666; margin:20px 0;">Bạn chưa đặt đơn hàng nào.</p>
+                <h2 style="color:#666;">📦 Không có đơn hàng nào</h2>
+                <p style="color:#666; margin:20px 0;">
+                    <c:choose>
+                        <c:when test="${currentStatus == 'ALL'}">Bạn chưa đặt đơn hàng nào.</c:when>
+                        <c:otherwise>Không có đơn hàng nào ở trạng thái này.</c:otherwise>
+                    </c:choose>
+                </p>
                 <a href="${pageContext.request.contextPath}/home" class="btn btn-primary">
                     ← Mua sắm ngay
                 </a>
@@ -121,11 +194,14 @@
                     </div>
                     <div class="order-status status-${order.status}">
                         <c:choose>
-                            <c:when test="${order.status == 'PENDING'}">⏳ Chờ xác nhận</c:when>
+                            <c:when test="${order.status == 'PENDING'}">🆕 Đơn hàng mới</c:when>
                             <c:when test="${order.status == 'CONFIRMED'}">✅ Đã xác nhận</c:when>
-                            <c:when test="${order.status == 'SHIPPING'}">🚚 Đang giao</c:when>
-                            <c:when test="${order.status == 'DELIVERED'}">📦 Đã giao</c:when>
-                            <c:when test="${order.status == 'CANCELLED'}">❌ Đã hủy</c:when>
+                            <c:when test="${order.status == 'PREPARING'}">📦 Chuẩn bị hàng</c:when>
+                            <c:when test="${order.status == 'SHIPPING'}">🚚 Đang vận chuyển</c:when>
+                            <c:when test="${order.status == 'DELIVERING'}">🛵 Đang giao hàng</c:when>
+                            <c:when test="${order.status == 'DELIVERED'}">📬 Đã giao hàng</c:when>
+                            <c:when test="${order.status == 'CANCELLED'}">❌ Đơn hàng hủy</c:when>
+                            <c:when test="${order.status == 'RETURNED'}">↩️ Đơn hàng hoàn</c:when>
                             <c:otherwise>${order.status}</c:otherwise>
                         </c:choose>
                     </div>

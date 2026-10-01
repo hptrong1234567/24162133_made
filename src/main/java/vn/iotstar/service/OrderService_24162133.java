@@ -12,6 +12,9 @@ public interface OrderService_24162133 {
     /** Lịch sử đơn hàng của user */
     List<Order_24162133> getOrdersByUser(Integer userId);
 
+    /** Lọc đơn hàng theo trạng thái */
+    List<Order_24162133> getOrdersByUserAndStatus(Integer userId, String status);
+
     /** Chi tiết 1 đơn hàng */
     Order_24162133 getOrderById(Integer orderId);
 

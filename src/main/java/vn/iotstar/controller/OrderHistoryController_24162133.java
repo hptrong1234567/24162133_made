@@ -34,10 +34,16 @@ public class OrderHistoryController_24162133 extends HttpServlet {
             return;
         }
 
-        // Lấy danh sách đơn hàng của user
-        List<Order_24162133> orders = orderService.getOrdersByUser(user.getId());
+        String status = req.getParameter("status");
+        if (status == null || status.trim().isEmpty()) {
+            status = "ALL";
+        }
+
+        List<Order_24162133> orders = orderService.getOrdersByUserAndStatus(user.getId(), status);
 
         req.setAttribute("orders", orders);
+        req.setAttribute("currentStatus", status);
+
         req.getRequestDispatcher("/views/order-history.jsp").forward(req, resp);
     }
 }
