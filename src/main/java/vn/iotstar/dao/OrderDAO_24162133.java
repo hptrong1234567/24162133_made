@@ -6,6 +6,7 @@ import vn.iotstar.model.Order_24162133;
 
 public interface OrderDAO_24162133 {
     List<Order_24162133> findByUserId(Integer userId);
+    List<Order_24162133> findByUserIdAndStatus(Integer userId, String status);
     Order_24162133 findById(Integer orderId);
     Order_24162133 insert(Order_24162133 order);
     void update(Order_24162133 order);

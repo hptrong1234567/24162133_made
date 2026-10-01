@@ -30,6 +30,21 @@ public class OrderDAOImpl_24162133 implements OrderDAO_24162133 {
     }
 
     @Override
+    public List<Order_24162133> findByUserIdAndStatus(Integer userId, String status) {
+        EntityManager em = emf.createEntityManager();
+        try {
+            TypedQuery<Order_24162133> q = em.createQuery(
+                    "SELECT o FROM Order_24162133 o WHERE o.user.id = :uid AND o.status = :st ORDER BY o.orderDate DESC",
+                    Order_24162133.class);
+            q.setParameter("uid", userId);
+            q.setParameter("st", status);
+            return q.getResultList();
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
     public Order_24162133 findById(Integer orderId) {
         EntityManager em = emf.createEntityManager();
         try {
