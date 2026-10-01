@@ -1,0 +1,21 @@
+# Maven
+target/
+
+# Eclipse / STS
+.settings/
+.classpath
+.project
+.springBeans
+.sts4-cache
+.apt_generated
+.factorypath
+
+# Java
+*.class
+*.jar
+*.war
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
